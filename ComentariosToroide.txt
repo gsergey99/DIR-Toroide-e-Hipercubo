@@ -1,0 +1,13 @@
+/* COMENTARIOS ADICIONALES :
+ * -Si no ponemos un B_cast, automáticamente el mínimo sería el último número que el 
+ * nodo root había mandado. Con lo cual no pasaría por la parte del código el cual se ejecuta el 
+ * programa de los demás nodos.
+ * 
+ * -En cuanto al desarrollo del algoritmo lo que tenemos que suponer que necesitamos conocer todos los números
+ * para ir comparando lo que tenemos al norte y lo que tenemos al sur y luego hacer lo mismo entre lo que tenemos
+ * entre el este y el oeste. Por ello lo tenemos que hacer diferentes veces.
+ * 
+ * 
+ * 
+ * 
+ * /
