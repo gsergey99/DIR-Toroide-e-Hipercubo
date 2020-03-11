@@ -15,7 +15,7 @@
 
 int leer_fichero(float numeros[]);
 void conocer_vecinos(int rank, int vecinos[]);
-
+float minimo(int rank,int vecinos[],float buffer_nodo);
 
 int main(int argc, char *argv[]){
 
@@ -26,9 +26,10 @@ int main(int argc, char *argv[]){
     int num_leidos,opcion;
     float numeros[L*L];
     int provisional[L*L] ={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; 
-    float buffer, min_rank;
+    float buffer_nodo,min_nodo;
     int vecinos[4]; // 0->Norte,1->Sur,2->Este,3->Oeste
     MPI_Status status;
+    MPI_Request request;
 
 
     if(rank ==0){
@@ -49,8 +50,8 @@ int main(int argc, char *argv[]){
             }else{
 
                 for (int i=0;i< num_leidos;i++){
-                    buffer = numeros[i];
-                    MPI_Send(&buffer,1,MPI_FLOAT,i,0,MPI_COMM_WORLD); // El rank 0 envía a todos los nodos, incluyéndose así mismo él mismo, los valores del fichero
+                    buffer_nodo = numeros[i];
+                    MPI_Send(&buffer_nodo,1,MPI_FLOAT,i,0,MPI_COMM_WORLD); // El rank 0 envía a todos los nodos, incluyéndose así mismo él mismo, los valores del fichero
                         
 
                 }
@@ -64,37 +65,13 @@ int main(int argc, char *argv[]){
 
     if(opcion==1){
 
-        MPI_Recv(&buffer,1,MPI_FLOAT,0,0,MPI_COMM_WORLD,&status);
-        conocer_vecinos(rank,vecinos);
-        min_rank = buffer; // Guardamos el valor recibido del rank 0, en el valor mínimo de cada nodo
-        for (int j=0;j<L;j++){
-
-            
-
-            MPI_Send(&min_rank,1,MPI_FLOAT,vecinos[0],10,MPI_COMM_WORLD); //Mandamos a los nodos del NORTE el valor del buffer
-
-            MPI_Recv(&buffer,1,MPI_FLOAT,vecinos[1],10,MPI_COMM_WORLD,&status); // Recibimos de los nodos del SUR el valor del buffer que ellos hayan mandado
-            
-            if(buffer<min_rank){ //Comparamos el valor recibido del SUR (buffer) con el valor mínimo del nodo
-                min_rank = buffer;
-            }
-        }
-
-        for (int j=0;j<L;j++){
-
-        
-            MPI_Send(&min_rank,1,MPI_FLOAT,vecinos[2],32,MPI_COMM_WORLD); //Mandamos a los nodos del ESTE el valor del buffer
-
-            MPI_Recv(&buffer,1,MPI_FLOAT,vecinos[3],32,MPI_COMM_WORLD,&status); // Recibimos de los nodos del OESTE el valor del buffer que ellos hayan mandado
-
-            if(buffer<min_rank){ //Comparamos el valor recibido del OESTE (buffer) con el valor mínimo del nodo
-                min_rank = buffer;
-            }
-            
-        }
+        MPI_Recv(&buffer_nodo,1,MPI_FLOAT,0,0,MPI_COMM_WORLD,&status);
+        conocer_vecinos(rank,vecinos); //Obetenemos los vecinos de cada nodo
+        min_nodo = minimo(rank,vecinos,buffer_nodo); // Obtenemos el mínimo de cada nodo
+       
         if (rank==0){
 
-            printf("[RANK %d] El valor minimo es %3f\n",rank,buffer); // El rank 0 imprimirá el valor mínimo de toda la red
+            printf("[RANK %d] El valor minimo es %3f\n",rank,min_nodo); // El rank 0 imprimirá el valor mínimo de toda la red
         }
         
         
@@ -171,5 +148,39 @@ void conocer_vecinos(int rank,int vecinos[]){
         vecinos[3] = rank-1;
         break;
     }
+
+}
+float minimo(int rank,int vecinos[],float buffer_nodo){
+    
+    MPI_Status status;
+    MPI_Request request;
+    float min_rank;
+    min_rank = buffer_nodo; // Guardamos el valor recibido del rank 0, en el valor mínimo de cada nodo
+        for (int j=0;j<L;j++){
+
+            MPI_Isend(&min_rank,1,MPI_FLOAT,vecinos[0],10,MPI_COMM_WORLD,&request); //Mandamos a los nodos del NORTE el valor del buffer
+
+            MPI_Recv(&buffer_nodo,1,MPI_FLOAT,vecinos[1],10,MPI_COMM_WORLD,&status); // Recibimos de los nodos del SUR el valor del buffer que ellos hayan mandado
+            
+            MPI_Wait(&request,&status); //Garantiza de que el valor haya sido copiado al buffer de envío y que se haya recibido el valor minimo correctamente y así poder reutilizar el buffer de envío
+            if(buffer_nodo<min_rank){   //Comparamos el valor recibido del SUR (buffer) con el valor mínimo del nodo
+                min_rank = buffer_nodo;
+            }
+        }
+
+        for (int j=0;j<L;j++){
+
+        
+            MPI_Isend(&min_rank,1,MPI_FLOAT,vecinos[2],32,MPI_COMM_WORLD,&request); //Mandamos a los nodos del ESTE el valor del buffer
+
+            MPI_Recv(&buffer_nodo,1,MPI_FLOAT,vecinos[3],32,MPI_COMM_WORLD,&status); // Recibimos de los nodos del OESTE el valor del buffer que ellos hayan mandado
+            
+            MPI_Wait(&request,&status); //Garantiza de que el valor haya sido copiado al buffer de envío y que se haya recibido el valor minimo correctamente y así poder reutilizar el buffer de envío
+            if(buffer_nodo<min_rank){ //Comparamos el valor recibido del OESTE (buffer) con el valor mínimo del nodo
+                min_rank = buffer_nodo;
+            }
+            
+        }
+        return min_rank;
 
 } 

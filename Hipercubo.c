@@ -9,7 +9,7 @@
 
 #define archivo "datos.dat"
 #define MAX_BUFFER 1000
-#define D 3
+#define D 4
 
 
 
@@ -26,23 +26,24 @@ int main(int argc, char *argv[]){
     int num_leidos,opcion,dimension;
     dimension = pow(2,D);
     float numeros[dimension];
-
-    int provisional[dimension] ={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; 
+    //float provisional[] ={-10.30,98.36,58.7,-12.10,1.36,100.39,-54.63,87.36};
+    //int provisional[dimension] ={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; 
     float buffer, min_rank;
-    int vecinos[D]; // 0->Norte,1->Sur,2->Este,3->Oeste
+    int vecinos[D]; 
     MPI_Status status;
+    MPI_Request request;
 
 
     if(rank ==0){
-        if(size!=L*L){
+        if(size!=dimension){
             opcion = 0; // El rank 0 va finalizar todos los nodos mandando un mensaje a todos los que en el comunicador, MultiCast
-            fprintf(stderr,"Error, el número de nodos (%d) no coincide con las dimensiones del Toroide (%d)\n",size,L*L);
+            fprintf(stderr,"Error, el número de nodos (%d) no coincide con las dimensiones del Toroide (%d)\n",size,dimension);
             MPI_Bcast(&opcion, 1, MPI_INT,0, MPI_COMM_WORLD);
 
         }else{
 
             num_leidos = leer_fichero(numeros); //leemos los numeros del archivo datos.dat
-
+            //num_leidos = 8;
             if(size!=num_leidos){ // El rank 0 va finalizar todos los nodos mandando un mensaje a todos los que en el comunicador, MultiCast
                 opcion=0; 
                 fprintf(stderr,"Error, el número de nodos (%d) no coincide con la cantidad de números leídos (%d)\n",size,num_leidos);
@@ -66,34 +67,23 @@ int main(int argc, char *argv[]){
 
     if(opcion==1){
 
-        MPI_Recv(&buffer,1,MPI_FLOAT,0,0,MPI_COMM_WORLD,&status);
+        MPI_Recv(&buffer,1,MPI_FLOAT,0,0,MPI_COMM_WORLD,&status); //El nodo recibe el valor enviado por el nodo 0
         conocer_vecinos(rank,vecinos);
         min_rank = buffer; // Guardamos el valor recibido del rank 0, en el valor mínimo de cada nodo
-        for (int j=0;j<L;j++){
+        for (int i=0;i<D;i++){ // Realizamos el primer for para cada una de las dimensiones
 
-            
+            for(int j=0;j<D;j++){ //REalizamos un segundo for para cada uno de los vecinos de cada nodo
 
-            MPI_Send(&min_rank,1,MPI_FLOAT,vecinos[0],10,MPI_COMM_WORLD); //Mandamos a los nodos del NORTE el valor del buffer
+                MPI_Isend(&min_rank,1,MPI_FLOAT,vecinos[j],10,MPI_COMM_WORLD,&request); //Mandamos a los nodos del NORTE el valor del buffer
 
-            MPI_Recv(&buffer,1,MPI_FLOAT,vecinos[1],10,MPI_COMM_WORLD,&status); // Recibimos de los nodos del SUR el valor del buffer que ellos hayan mandado
-            
-            if(buffer<min_rank){ //Comparamos el valor recibido del SUR (buffer) con el valor mínimo del nodo
-                min_rank = buffer;
+                MPI_Recv(&buffer,1,MPI_FLOAT,vecinos[j],10,MPI_COMM_WORLD,&status); // Recibimos de los nodos del SUR el valor del buffer que ellos hayan mandado
+                
+                MPI_Wait(&request,&status);
+                if(buffer<min_rank){ //Comparamos el valor recibido del SUR (buffer) con el valor mínimo del nodo
+                    min_rank = buffer;
+                }
             }
-        }
-
-        for (int j=0;j<L;j++){
-
-        
-            MPI_Send(&min_rank,1,MPI_FLOAT,vecinos[2],32,MPI_COMM_WORLD); //Mandamos a los nodos del ESTE el valor del buffer
-
-            MPI_Recv(&buffer,1,MPI_FLOAT,vecinos[3],32,MPI_COMM_WORLD,&status); // Recibimos de los nodos del OESTE el valor del buffer que ellos hayan mandado
-
-            if(buffer<min_rank){ //Comparamos el valor recibido del OESTE (buffer) con el valor mínimo del nodo
-                min_rank = buffer;
-            }
-            
-        }
+        }        
         if (rank==0){
 
             printf("[RANK %d] El valor minimo es %3f\n",rank,buffer); // El rank 0 imprimirá el valor mínimo de toda la red
@@ -136,9 +126,8 @@ int leer_fichero(float lista_numeros[]){
 
 void conocer_vecinos(int rank,int vecinos[]){
 
-    for(int i=0;i<3;i++){
-        vecinos[i] = rank ^ (1 << i);
+    for(int i=0;i<D;i++){
+        vecinos[i] = rank ^ (1 << i);  //Con el desplazamiento obtenemos el el vecino correspondiente
     
-}
-
+    }
 } 
