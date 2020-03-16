@@ -5,3 +5,7 @@ para ello vamos a utilizar el MPI_Isend(). Con esta función lo que queremos con
 para que cuando queramos hacer la comparación no envíe el buffer hasta que haya recibido de su vecino, para que podemaos garantizar
 de que el valor pueda ser reutilizable o no. Para ello utilizamos MPI_Wait que nos permite esperar el valor minimo 
 y ya luego poder comparar para que el nuevo valor sea el que tenga del buffer. Sería no bloqueante.
+
+https://stackoverflow.com/questions/10017301/mpi-blocking-vs-non-blocking
+https://stackoverflow.com/questions/43004420/is-a-mpi-wait-necessary-after-a-mpi-isend
+

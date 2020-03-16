@@ -25,12 +25,12 @@ int main(int argc, char *argv[]){
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     int num_leidos,opcion;
     float numeros[L*L];
-    int provisional[L*L] ={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; 
+    //int provisional[L*L] ={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; 
     float buffer_nodo,min_nodo;
     int vecinos[4]; // 0->Norte,1->Sur,2->Este,3->Oeste
     MPI_Status status;
     MPI_Request request;
-
+    
 
     if(rank ==0){
         if(size!=L*L){
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
 
         }else{
 
-            num_leidos = leer_fichero(numeros); //leemos los numeros del archivo datos.dat
+            num_leidos = leer_fichero(numeros); //Leemos los numeros del archivo datos.dat
 
             if(size!=num_leidos){ // El rank 0 va finalizar todos los nodos mandando un mensaje a todos los que en el comunicador, MultiCast
                 opcion=0; 
@@ -51,17 +51,17 @@ int main(int argc, char *argv[]){
 
                 for (int i=0;i< num_leidos;i++){
                     buffer_nodo = numeros[i];
-                    MPI_Send(&buffer_nodo,1,MPI_FLOAT,i,0,MPI_COMM_WORLD); // El rank 0 envía a todos los nodos, incluyéndose así mismo él mismo, los valores del fichero
-                        
-
+                    MPI_Bsend(&buffer_nodo,1,MPI_FLOAT,i,0,MPI_COMM_WORLD); // El rank 0 envía a todos los nodos, 
+                    //incluyéndose así mismo él mismo, los valores del fichero
                 }
-                opcion = 1; // El rank 0 va finalizar todos los nodos mandando un mensaje a todos los que en el comunicador, MultiCast
+                opcion = 1; // El rank 0 evía a todos los procesos un mensaje de continuación, a través de un mensaje MultiCast del comunicador
                 MPI_Bcast(&opcion,1,MPI_INT,0, MPI_COMM_WORLD);
             }
         }            
     }
 
-    MPI_Bcast(&opcion, 1, MPI_INT, 0, MPI_COMM_WORLD); // Cada nodo recibe el aviso del rank 0, para indicar de que se ha realizado correctamente el envío de datos al fichero
+    MPI_Bcast(&opcion, 1, MPI_INT, 0, MPI_COMM_WORLD); // Cada nodo recibe el aviso del rank 0, para indicar 
+    //de que se ha realizado correctamente el envío de datos al fichero
 
     if(opcion==1){
 
@@ -69,13 +69,10 @@ int main(int argc, char *argv[]){
         conocer_vecinos(rank,vecinos); //Obetenemos los vecinos de cada nodo
         min_nodo = minimo(rank,vecinos,buffer_nodo); // Obtenemos el mínimo de cada nodo
        
-        if (rank==0){
+        if (rank==2){
 
             printf("[RANK %d] El valor minimo es %3f\n",rank,min_nodo); // El rank 0 imprimirá el valor mínimo de toda la red
-        }
-        
-        
-        
+        }        
     }
     MPI_Finalize();
     return 0;
@@ -94,7 +91,6 @@ int leer_fichero(float lista_numeros[]){
     }
     while (fscanf(fichero,"%s",buffer)!=EOF)
     {
-
     }
     fclose(fichero);
 
@@ -158,14 +154,18 @@ float minimo(int rank,int vecinos[],float buffer_nodo){
     min_rank = buffer_nodo; // Guardamos el valor recibido del rank 0, en el valor mínimo de cada nodo
         for (int j=0;j<L;j++){
 
+            
             MPI_Isend(&min_rank,1,MPI_FLOAT,vecinos[0],10,MPI_COMM_WORLD,&request); //Mandamos a los nodos del NORTE el valor del buffer
 
-            MPI_Recv(&buffer_nodo,1,MPI_FLOAT,vecinos[1],10,MPI_COMM_WORLD,&status); // Recibimos de los nodos del SUR el valor del buffer que ellos hayan mandado
+            MPI_Recv(&buffer_nodo,1,MPI_FLOAT,vecinos[1],10,MPI_COMM_WORLD,&status); // Recibimos de los nodos del SUR el valor 
+            //del buffer que ellos hayan mandado
             
-            MPI_Wait(&request,&status); //Garantiza de que el valor haya sido copiado al buffer de envío y que se haya recibido el valor minimo correctamente y así poder reutilizar el buffer de envío
+            MPI_Wait(&request,&status); //Garantiza de que el valor haya sido copiado al buffer de 
+            //envío y que se haya recibido el valor minimo correctamente y así poder reutilizar el buffer de envío
             if(buffer_nodo<min_rank){   //Comparamos el valor recibido del SUR (buffer) con el valor mínimo del nodo
                 min_rank = buffer_nodo;
             }
+           
         }
 
         for (int j=0;j<L;j++){
@@ -173,9 +173,11 @@ float minimo(int rank,int vecinos[],float buffer_nodo){
         
             MPI_Isend(&min_rank,1,MPI_FLOAT,vecinos[2],32,MPI_COMM_WORLD,&request); //Mandamos a los nodos del ESTE el valor del buffer
 
-            MPI_Recv(&buffer_nodo,1,MPI_FLOAT,vecinos[3],32,MPI_COMM_WORLD,&status); // Recibimos de los nodos del OESTE el valor del buffer que ellos hayan mandado
+            MPI_Recv(&buffer_nodo,1,MPI_FLOAT,vecinos[3],32,MPI_COMM_WORLD,&status); // Recibimos de los nodos del OESTE el 
+            //valor del buffer que ellos hayan mandado
             
-            MPI_Wait(&request,&status); //Garantiza de que el valor haya sido copiado al buffer de envío y que se haya recibido el valor minimo correctamente y así poder reutilizar el buffer de envío
+            MPI_Wait(&request,&status); //Garantiza de que el valor haya sido copiado al buffer 
+            //de envío y que se haya recibido el valor minimo correctamente y así poder reutilizar el buffer de envío
             if(buffer_nodo<min_rank){ //Comparamos el valor recibido del OESTE (buffer) con el valor mínimo del nodo
                 min_rank = buffer_nodo;
             }
