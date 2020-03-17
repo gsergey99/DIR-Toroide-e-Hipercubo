@@ -72,10 +72,8 @@ int main(int argc, char *argv[]){
         
         if (rank==0){
 
-            printf("[RANK %d] El valor minimo es %3f\n",rank,max_rank); // El rank 0 imprimirá el valor máximo de toda la red
+            printf("[RANK %d] El valor máximo es %3f\n",rank,max_rank); // El rank 0 imprimirá el valor máximo de toda la red
         }
-        
-        
         
     }
     MPI_Finalize();

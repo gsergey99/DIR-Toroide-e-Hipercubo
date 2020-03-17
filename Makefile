@@ -1,6 +1,5 @@
-
 all: 
-	
+
 	mpicc Toroide.c -o Toroide
 	mpicc Hipercubo.c -o Hipercubo
 

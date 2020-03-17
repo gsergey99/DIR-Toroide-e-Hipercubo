@@ -51,7 +51,7 @@ int main(int argc, char *argv[]){
 
                 for (int i=0;i< num_leidos;i++){
                     buffer_nodo = numeros[i];
-                    MPI_Bsend(&buffer_nodo,1,MPI_FLOAT,i,0,MPI_COMM_WORLD); // El rank 0 envía a todos los nodos, 
+                    MPI_Send(&buffer_nodo,1,MPI_FLOAT,i,0,MPI_COMM_WORLD); // El rank 0 envía a todos los nodos, 
                     //incluyéndose así mismo él mismo, los valores del fichero
                 }
                 opcion = 1; // El rank 0 evía a todos los procesos un mensaje de continuación, a través de un mensaje MultiCast del comunicador
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]){
         conocer_vecinos(rank,vecinos); //Obetenemos los vecinos de cada nodo
         min_nodo = minimo(rank,vecinos,buffer_nodo); // Obtenemos el mínimo de cada nodo
        
-        if (rank==2){
+        if (rank==0){
 
             printf("[RANK %d] El valor minimo es %3f\n",rank,min_nodo); // El rank 0 imprimirá el valor mínimo de toda la red
         }        
