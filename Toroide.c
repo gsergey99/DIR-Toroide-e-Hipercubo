@@ -25,7 +25,6 @@ int main(int argc, char *argv[]){
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     int num_leidos,opcion;
     float numeros[L*L];
-    //int provisional[L*L] ={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; 
     float buffer_nodo,min_nodo;
     int vecinos[4]; // 0->Norte,1->Sur,2->Este,3->Oeste
     MPI_Status status;
